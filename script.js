@@ -1,116 +1,82 @@
-// In-memory storage that persists across page refreshes using URL hash
-let recordStorage = [];
+// Store records in an array
+        let records = [];
 
-// Initialize records from URL hash on page load
-function initializeStorage() {
-    try {
-        const hash = window.location.hash.substring(1);
-        if (hash) {
-            const decoded = decodeURIComponent(hash);
-            recordStorage = JSON.parse(decoded);
+        // Get records from localStorage
+        function getRecords() {
+            const data = localStorage.getItem("myRecords");
+            return data ? JSON.parse(data) : []; // Return array or empty if none
         }
-    } catch (e) {
-        recordStorage = [];
-    }
-}
 
-// Save records to URL hash for persistence
-function persistToURL() {
-    try {
-        const encoded = encodeURIComponent(JSON.stringify(recordStorage));
-        window.location.hash = encoded;
-    } catch (e) {
-        // If data is too large for URL, use fallback
-        console.warn('Data too large for URL storage');
-    }
-}
+        // Save records to localStorage
+        function saveRecords() {
+            localStorage.setItem("myRecords", JSON.stringify(records));
+        }
 
-// Retrieves records from storage, returns empty array if none exist
-function getRec() {
-    return recordStorage || [];
-}
+        // Add a new record
+        function addRecord() {
+            const input = document.getElementById("nameInput");
+            const name = input.value.trim(); // Remove extra spaces
+            if (name === "") return; // Skip if empty
+            records = getRecords(); // Get current records
+            records.push(name); // Add new name
+            saveRecords(); // Save to localStorage
+            input.value = ""; // Clear input
+            displayRecords(); // Show updated list
+        }
 
-// Saves records to storage
-function saveRec(recs) {
-    recordStorage = [...recs];
-    persistToURL();
-}
+        // Delete a record
+        function deleteRecord(index) {
+            records = getRecords(); // Get current records
+            records.splice(index, 1); // Remove record
+            saveRecords(); // Save to localStorage
+            displayRecords(); // Show updated list
+        }
 
-// Adds a new record from input field
-function addRec() {
-    const input = document.getElementById("nameInput");
-    const name = input.value.trim(); // Remove extra spaces
-    if (!name) return; // Do nothing if input is empty
-    const records = getRec();
-    records.push(name); // Add new name to records
-    saveRec(records); // Save to storage
-    input.value = ''; // Clear input field
-    disRec(); // Refresh display
-}
+        // Edit or save a record
+        function updateRecord(index, isSaving = false, newName = "") {
+            records = getRecords(); // Get current records
+            const list = document.getElementById("recordList");
+            const recordDiv = list.children[index];
 
-// Deletes a record by index
-function deleteRec(index) {
-    const records = getRec();
-    records.splice(index, 1); // Remove record at index
-    saveRec(records); // Save updated records
-    disRec(); // Refresh display
-}
-
-// Handles both starting and saving edit for a record
-function updateRec(index, isSaving = false, newName = '') {
-    const records = getRec();
-    const list = document.getElementById("recordList");
-    const recordDiv = list.children[index];
-
-    if (isSaving) {
-        // Save mode: Update record with new name
-        const trimmedName = newName.trim();
-        if (!trimmedName) return; // Do nothing if new name is empty
-        records[index] = trimmedName; // Update record
-        saveRec(records); // Save to storage
-        disRec(); // Refresh display
-    } else {
-        // Edit mode: Show input field with current name
-        recordDiv.innerHTML = `
+            if (isSaving) {
+                // Save the edited name
+                const trimmedName = newName.trim();
+                if (trimmedName === "") return; // Skip if empty
+                records[index] = trimmedName; // Update record
+                saveRecords(); // Save to localStorage
+                displayRecords(); // Show updated list
+            } else {
+                // Show edit input field
+                recordDiv.innerHTML = `
                     <div class="record-text">
                         ${index + 1}. <input type="text" class="edit-input" value="${records[index]}" id="editInput${index}">
                     </div>
                     <div class="record-actions">
-                        <button onclick="updateRec(${index}, true, document.getElementById('editInput${index}').value)">Save</button>
-                        <button onclick="disRec()">Cancel</button>
+                        <button onclick="updateRecord(${index}, true, document.getElementById('editInput${index}').value)">Save</button>
+                        <button onclick="displayRecords()">Cancel</button>
                     </div>
                 `;
-        document.getElementById(`editInput${index}`).focus(); // Auto-focus input
-    }
-}
+                document.getElementById(`editInput${index}`).focus(); // Focus input
+            }
+        }
 
-// Displays all records
-function disRec() {
-    const records = getRec();
-    const list = document.getElementById("recordList");
-    list.innerHTML = ""; // Clear current list
-    records.forEach((name, index) => {
-        // Escape single quotes in name to prevent JS errors
-        const escapedName = name.replace(/'/g, "\\'");
-        list.innerHTML += `
+        // Show all records
+        function displayRecords() {
+            records = getRecords(); // Get current records
+            const list = document.getElementById("recordList");
+            list.innerHTML = ""; // Clear list
+            records.forEach((name, index) => {
+                const safeName = name.replace(/'/g, "\\'"); // Escape quotes
+                list.innerHTML += `
                     <div class="records">
                         <div class="record-text">${index + 1}. ${name}</div>
                         <div class="record-actions">
-                            <button onclick="updateRec(${index})">Edit</button>
-                            <button onclick="deleteRec(${index})">Delete</button>
+                            <button onclick="updateRecord(${index})">Edit</button>
+                            <button onclick="deleteRecord(${index})">Delete</button>
                         </div>
                     </div>`;
-    });
-}
+            });
+        }
 
-// Load records when page loads
-window.onload = function () {
-    initializeStorage();
-    disRec();
-};
-
-// Handle browser back/forward buttons
-window.addEventListener('hashchange', function () {
-    initializeStorage();
-    disRec();
-});
+        // Load records when page opens
+        window.onload = displayRecords;
