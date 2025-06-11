@@ -9,18 +9,14 @@
 </head>
 
 <body>
-    <div class="container">
+   <div class="container">
         <h1>📋 Record Manager</h1>
-
         <div class="input-section">
-            <input type="text" id="nameInput" placeholder="Enter Your Name">
-            <button class="add-btn" onclick="addRec()">ADD</button>
+            <input type="text" id="nameInput" placeholder="Enter your name" aria-label="Enter name to add record" required>
+            <button class="add-btn" onclick="addRecord()" aria-label="Add new record">ADD</button>
         </div>
-
         <h2>All Records</h2>
-        <div id="recordList"></div>
-    </div>
-    <script src="script.js"></script>
+        <div id="recordList" role="list" aria-live="polite"></div>
 </body>
 
 </html>
